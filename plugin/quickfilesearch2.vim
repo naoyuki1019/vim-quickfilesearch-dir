@@ -146,12 +146,11 @@ endfunction
 
 function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
 
-  let l:grep_cmd = '!grep -G -i -s'
+  let l:grep_cmd = '!\grep -G -i -s'
   let l:searchword = substitute(a:searchword, '\([^\.]\)\*', '\1.\*', 'g')
   let l:searchword = substitute(l:searchword, ' ', '.*', 'g')
   let l:escaped_lsfile_path = shellescape(a:lsfile_path)
   let l:escaped_lsfile_tmp = shellescape(a:lsfile_tmp)
-  " let l:conf = confirm(l:searchword)
   silent execute l:grep_cmd.' '.l:searchword.'  '.l:escaped_lsfile_path.' > '.l:escaped_lsfile_tmp
 
   if !filereadable(fnamemodify(a:lsfile_tmp, ':p'))
