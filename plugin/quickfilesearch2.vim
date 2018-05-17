@@ -21,7 +21,13 @@ if !exists('g:qsf_maxline')
   let g:qsf_maxline = 200
 endif
 
+"Move the cursor to quickfix window after search
+if !exists('g:qsf_focus_quickfix')
+  let g:qsf_focus_quickfix = 0
+endif
+
 let s:dir = ''
+let s:bufnr = ''
 
 command! -nargs=* QSF call quickfilesearch2#QFSFileSearch(<f-args>)
 
@@ -29,7 +35,7 @@ command! -nargs=* QSF call quickfilesearch2#QFSFileSearch(<f-args>)
 function! s:search_lsfile(dir)
 
   let l:lsfile_path = fnamemodify(a:dir.'/'.g:qsf_lsfile, ':p')
-  echo l:lsfile_path
+  " echo l:lsfile_path
   if filereadable(l:lsfile_path)
     return l:lsfile_path
   endif
@@ -37,12 +43,12 @@ function! s:search_lsfile(dir)
   let l:dir = fnamemodify(a:dir.'/../', ':p:h')
 
   if s:dir == l:dir
-    echo "windows root " . s:dir
+    " echo "windows root " . s:dir
     return ''
   endif
 
   if '/' == l:dir
-    echo "root directory / "
+    " echo "root directory / "
     return ''
   endif
 
@@ -52,24 +58,67 @@ function! s:search_lsfile(dir)
 
 endfunction
 
+function! s:getbufnr()
+
+  " if getbufvar('%', '&buftype') ==# 'quickfix'
+  "   let l:conf = confirm('% is quickfix')
+  "   if getbufvar('#', '&buftype') ==# 'quickfix'
+  "     let l:conf = confirm('# is quickfix')
+  "   else
+  "     let l:conf = confirm('# is no quickfix')
+  "   endif
+  " else
+  "   let l:conf = confirm('% is no quickfix')
+  " endif
+
+  let l:bufnr = bufnr('%')
+  let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
+  if '' != l:bufdir
+    return l:bufnr
+  endif
+
+  let l:bufnr = bufnr('#')
+  let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
+  if '' != l:bufdir
+    return l:bufnr
+  endif
+
+  let l:bufnr = s:bufnr
+  let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
+  if '' != l:bufdir
+    return l:bufnr
+  endif
+
+  return ''
+
+endfunction
 
 function! quickfilesearch2#QFSFileSearch(...)
+
+  let l:bufdir = ''
 
   if 1 > a:0
     return
   endif
 
   " get listfile path
-  let l:lsfile_path = s:search_lsfile(expand('%:h'))
-
-  if '' == l:lsfile_path
-    echo 'Not Found:['.g:qsf_lsfile.']'
+  let l:bufnr = s:getbufnr()
+  if '' == l:bufnr
     return
   endif
 
-  echo l:lsfile_path
+  let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':h'))
+  if '' == l:lsfile_path
+    let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':h'))
+    if '' == l:lsfile_path
+      echo 'Not Found:['.g:qsf_lsfile.']'
+      return
+    endif
+  endif
+
+  let s:bufnr = l:bufnr
   let l:lsfile_tmp = l:lsfile_path.'.tmp'
-  echo l:lsfile_tmp
+  " echo l:lsfile_tmp
 
   "引数を空白で連結
   let l:searchword = ''
@@ -77,7 +126,7 @@ function! quickfilesearch2#QFSFileSearch(...)
     let l:searchword .= l:s . ' '
   endfor
   let l:searchword = l:searchword[0:strlen(l:searchword) - 2]
-  echo l:searchword
+  " echo l:searchword
 
   "tmp作成
   if 0 != s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
@@ -90,6 +139,11 @@ function! quickfilesearch2#QFSFileSearch(...)
   "tmp削除
   silent execute '!rm ' . shellescape(l:lsfile_tmp)
 
+  "Move the cursor to quickfix window after search
+  if 0 == g:qsf_focus_quickfix
+    wincmd w
+  endif
+
 endfunction
 
 function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
@@ -99,7 +153,7 @@ function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
   let l:searchword = substitute(l:searchword, ' ', '.*', 'g')
   let l:escaped_lsfile_path = shellescape(a:lsfile_path)
   let l:escaped_lsfile_tmp = shellescape(a:lsfile_tmp)
-  let l:conf = confirm(l:searchword)
+  " let l:conf = confirm(l:searchword)
   silent execute l:grep_cmd.' '.l:searchword.'  '.l:escaped_lsfile_path.' > '.l:escaped_lsfile_tmp
 
   if !filereadable(fnamemodify(a:lsfile_tmp, ':p'))
@@ -112,7 +166,7 @@ endfunction
 function! s:cgetfile(lsfile_tmp)
 
   "行数が多いとquickfixに読み込むのに時間がかかるため行数チェック
-  execute 'edit ' . a:lsfile_tmp
+  execute 'tabe ' . a:lsfile_tmp
   let l:line = line('$')
   execute 'bd! ' . bufnr('%')
   "閾値より大きい場合はメッセージ表示で終わり
@@ -121,14 +175,16 @@ function! s:cgetfile(lsfile_tmp)
     return
   endif
 
-  "使用する前に閉じておく
-  cclose
-
   "閾値より少ない場合はエラーファイルへ
   let l:bak_errorformat = &errorformat
   let &errorformat='%f'
   execute 'cgetfile ' . a:lsfile_tmp
-  copen
   let &errorformat=l:bak_errorformat
 
+  copen
+
 endfunction
+
+
+let &cpo = s:save_cpo
+unlet s:save_cpo
