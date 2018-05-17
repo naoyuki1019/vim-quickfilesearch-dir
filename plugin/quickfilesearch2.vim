@@ -23,13 +23,14 @@ endif
 
 "Move the cursor to quickfix window after search
 if !exists('g:qsf_focus_quickfix')
-  let g:qsf_focus_quickfix = 0
+  let g:qsf_focus_quickfix = 1
 endif
 
 let s:dir = ''
 let s:bufnr = ''
 
-command! -nargs=* QSF call quickfilesearch2#QFSFileSearch(<f-args>)
+command! -nargs=* FS call quickfilesearch2#QFSFileSearch(<f-args>)
+command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
 
 
 function! s:search_lsfile(dir)
@@ -60,17 +61,6 @@ endfunction
 
 function! s:getbufnr()
 
-  " if getbufvar('%', '&buftype') ==# 'quickfix'
-  "   let l:conf = confirm('% is quickfix')
-  "   if getbufvar('#', '&buftype') ==# 'quickfix'
-  "     let l:conf = confirm('# is quickfix')
-  "   else
-  "     let l:conf = confirm('# is no quickfix')
-  "   endif
-  " else
-  "   let l:conf = confirm('% is no quickfix')
-  " endif
-
   let l:bufnr = bufnr('%')
   let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
   if '' != l:bufdir
@@ -93,6 +83,14 @@ function! s:getbufnr()
 
 endfunction
 
+function! quickfilesearch2#QFSFileSearchInput()
+  let l:filename = input('Enter filename:')
+  if '' == l:filename
+    return
+  endif
+  call quickfilesearch2#QFSFileSearch(l:filename)
+endfunction
+
 function! quickfilesearch2#QFSFileSearch(...)
 
   let l:bufdir = ''
@@ -111,7 +109,7 @@ function! quickfilesearch2#QFSFileSearch(...)
   if '' == l:lsfile_path
     let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':h'))
     if '' == l:lsfile_path
-      echo 'Not Found:['.g:qsf_lsfile.']'
+      let l:conf = confirm('Not Found:['.g:qsf_lsfile.']')
       return
     endif
   endif
@@ -137,7 +135,7 @@ function! quickfilesearch2#QFSFileSearch(...)
   call s:cgetfile(l:lsfile_tmp)
 
   "tmp削除
-  silent execute '!rm ' . shellescape(l:lsfile_tmp)
+  call delete(l:lsfile_tmp)
 
   "Move the cursor to quickfix window after search
   if 0 == g:qsf_focus_quickfix
