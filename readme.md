@@ -14,18 +14,18 @@ This plugin displays the search results of file from .lsfile into Quickfix
 
 - search file pt1
 
-	:FS `filename`
+  :FS `filename`
 
 - search file pt2
 
-	:QFSFileSearch
+  :QFSFileSearch
 
-	&nbsp;&nbsp;&nbsp;&nbsp;Enter filename:`filename`
+  &nbsp;&nbsp;&nbsp;&nbsp;Enter filename:`filename`
 
 
-- remake list file
+- make list file
 
-	:QFSMakeListFile
+  :QFSMakeList
 
 ## Setting
 
@@ -35,11 +35,8 @@ This plugin displays the search results of file from .lsfile into Quickfix
 let g:qsf_lsfile = '.lsfile' "default
 let g:qsf_maxline = 200 "default
 let g:qsf_focus_quickfix = 1 "move the cursor to quickfix after search
-if has('win32')
-	let g:qsf_mkfile = 'make_lsfile.bat'
-else
-	let g:qsf_mkfile = 'make_lsfile.sh' "default
-endif
+let g:qsf_mkfile = 'make_lsfile.bat' "default windows
+let g:qsf_mkfile = 'make_lsfile.sh' "default linux
 
 "noremap <C-F12> :<C-u>QFSFileSearch<CR>
 ```

@@ -28,7 +28,11 @@ endif
 
 "mkfile ***.sh ***.bat
 if !exists('g:qsf_mkfile')
-  let g:qsf_mkfile = 'make_lsfile.sh'
+  if has('win32')
+    let g:qsf_mkfile = 'make_lsfile.bat'
+  else
+    let g:qsf_mkfile = 'make_lsfile.sh'
+  endif
 endif
 
 let s:dir = ''
@@ -37,7 +41,7 @@ let s:searchword = ''
 
 command! -nargs=* FS call quickfilesearch2#QFSFileSearch(<f-args>)
 command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
-command! QFSMakeListFile call quickfilesearch2#QFSMakeListFile()
+command! QFSMakeList call quickfilesearch2#QFSMakeList()
 
 
 function! s:get_filedir(dir, fname)
@@ -130,7 +134,7 @@ function! quickfilesearch2#QFSFileSearch(...)
     let l:filedir = s:get_filedir(fnamemodify(bufname(s:bufnr), ':p:h'), g:qsf_lsfile)
     if '' == l:filedir
       let l:conf = confirm('note: not found ['.g:qsf_lsfile.']')
-      let l:filedir = quickfilesearch2#QFSMakeListFile()
+      let l:filedir = quickfilesearch2#QFSMakeList()
       if '' == l:filedir
         return
       endif
@@ -220,7 +224,7 @@ function! s:cgetfile(lsfile_tmp)
 
 endfunction
 
-function! quickfilesearch2#QFSMakeListFile()
+function! quickfilesearch2#QFSMakeList()
 
   " get listfile path
   let l:bufnr = s:getbufnr()
