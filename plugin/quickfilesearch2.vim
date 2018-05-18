@@ -45,7 +45,11 @@ function! s:get_filedir(dir, fname)
   let l:lsfile_path = fnamemodify(a:dir.'/'.a:fname, ':p')
 
   if filereadable(l:lsfile_path)
-    return a:dir.'/'
+    if has('win32')
+      return a:dir.'\'
+    else
+      return a:dir.'/'
+    endif
   endif
 
   let l:dir = fnamemodify(a:dir.'/../', ':p:h')
@@ -180,7 +184,7 @@ function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
   let l:escaped_lsfile_path = shellescape(a:lsfile_path)
   let l:escaped_lsfile_tmp = shellescape(a:lsfile_tmp)
   let l:execute = l:grep_cmd.' '.l:searchword.' '.l:escaped_lsfile_path.' > '.l:escaped_lsfile_tmp
-  " let l:conf = confirm(l:execute)
+  " let l:conf = confirm('debug: '.l:execute)
   silent execute '!\touch '.l:escaped_lsfile_tmp
   silent execute l:execute
   let s:searchword = l:searchword
@@ -196,8 +200,7 @@ function! s:cgetfile(lsfile_tmp)
 
   "Not Found
   if 0 == l:fsize
-    " let l:conf = confirm('not found ['.s:searchword.']')
-    echo 'note: not found ['.s:searchword.']'
+    let l:conf = confirm('note: not found ['.s:searchword.']')
     return
   endif
 
@@ -241,7 +244,7 @@ function! quickfilesearch2#QFSMakeListFile()
 
   if has('win32')
     let l:drive = l:filedir[:stridx(l:filedir, ':')]
-    let l:execute = '!'.l:drive.' & cd '.shellescape(l:filedir).' & start '.shellescape(l:mkfile_path)
+    let l:execute = '!'.l:drive.' & cd '.shellescape(l:filedir).' & '.shellescape(l:mkfile_path)
   else
     let l:execute = '!cd '.shellescape(l:filedir).'; /bin/bash '.shellescape(l:mkfile_path)
   endif

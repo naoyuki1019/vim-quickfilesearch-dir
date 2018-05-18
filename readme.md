@@ -12,15 +12,20 @@ This plugin displays the search results of file from .lsfile into Quickfix
 
 ## How to use
 
-###search file1<br>
-:FS `filename` <br>
+- search file pt1
 
-###search file2<br>
-:QFSFileSearch<br>
-&nbsp;&nbsp;Enter filename:`filename`<br>
+	:FS `filename`
 
-###remake list file<br>
-:QFSMakeListFile<br>
+- search file pt2
+
+	:QFSFileSearch
+
+	&nbsp;&nbsp;&nbsp;&nbsp;Enter filename:`filename`
+
+
+- remake list file
+
+	:QFSMakeListFile
 
 ## Setting
 
@@ -49,7 +54,7 @@ noremap <C-F12> :<C-u>QFSFileSearch<CR>
 
 ```bat
 rem dir & findstr
-rem dir /s /b | findstr /i /v "\\\.git\\" > .lsfile
-dir /s /b *.php *.tpl *.css *.js *.css  > .lsfile
+rem dir /s /b /a-d * | findstr /i /v "\\\.git\\" > .lsfile
+dir /s /b /a-d *.php *.tpl *.css *.js *.css  > .lsfile
 ```
 
