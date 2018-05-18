@@ -4,7 +4,7 @@
 " * @version 1.0
 " */
 
-if exists("g:loaded_quickfilesearch2")
+if exists('g:loaded_quickfilesearch2')
   finish
 endif
 let g:loaded_quickfilesearch2 = 1
@@ -28,6 +28,7 @@ endif
 
 let s:dir = ''
 let s:bufnr = ''
+let s:searchword = ''
 
 command! -nargs=* FS call quickfilesearch2#QFSFileSearch(<f-args>)
 command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
@@ -36,7 +37,7 @@ command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
 function! s:search_lsfile(dir)
 
   let l:lsfile_path = fnamemodify(a:dir.'/'.g:qsf_lsfile, ':p')
-  " echo l:lsfile_path
+
   if filereadable(l:lsfile_path)
     return l:lsfile_path
   endif
@@ -44,12 +45,12 @@ function! s:search_lsfile(dir)
   let l:dir = fnamemodify(a:dir.'/../', ':p:h')
 
   if s:dir == l:dir
-    " echo "windows root " . s:dir
+    " echo 'windows root ' . s:dir
     return ''
   endif
 
   if '/' == l:dir
-    " echo "root directory / "
+    " echo 'root directory / '
     return ''
   endif
 
@@ -62,21 +63,27 @@ endfunction
 function! s:getbufnr()
 
   let l:bufnr = bufnr('%')
-  let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
-  if '' != l:bufdir
-    return l:bufnr
+  if getbufvar(l:bufnr, '&buftype') ==# ''
+    let l:bufdir = fnamemodify(bufname(l:bufnr), ':p:h')
+    if '' != l:bufdir
+      return l:bufnr
+    endif
   endif
 
   let l:bufnr = bufnr('#')
-  let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
-  if '' != l:bufdir
-    return l:bufnr
+  if getbufvar(l:bufnr, '&buftype') ==# ''
+    let l:bufdir = fnamemodify(bufname(l:bufnr), ':p:h')
+    if '' != l:bufdir
+      return l:bufnr
+    endif
   endif
 
   let l:bufnr = s:bufnr
-  let l:bufdir = fnamemodify(bufname(l:bufnr), ':h')
-  if '' != l:bufdir
-    return l:bufnr
+  if getbufvar(l:bufnr, '&buftype') ==# ''
+    let l:bufdir = fnamemodify(bufname(l:bufnr), ':p:h')
+    if '' != l:bufdir
+      return l:bufnr
+    endif
   endif
 
   return ''
@@ -105,11 +112,13 @@ function! quickfilesearch2#QFSFileSearch(...)
     return
   endif
 
-  let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':h'))
+  let s:dir = ''
+  let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':p:h'))
   if '' == l:lsfile_path
-    let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':h'))
+    let s:dir = ''
+    let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':p:h'))
     if '' == l:lsfile_path
-      let l:conf = confirm('Not Found:['.g:qsf_lsfile.']')
+      let l:conf = confirm('not found:['.g:qsf_lsfile.']')
       return
     endif
   endif
@@ -127,7 +136,10 @@ function! quickfilesearch2#QFSFileSearch(...)
   " echo l:searchword
 
   "tmp作成
-  if 0 != s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
+  call s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
+
+  if !filereadable(fnamemodify(l:lsfile_tmp, ':p'))
+    let l:conf = confirm('cannot open ['.l:lsfile_tmp.']')
     return
   endif
 
@@ -146,18 +158,17 @@ endfunction
 
 function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
 
-  let l:grep_cmd = '!\grep -G -i -s'
+  let l:grep_cmd = '!\grep -G -i -s -e'
   let l:searchword = substitute(a:searchword, '\([^\.]\)\*', '\1.\*', 'g')
   let l:searchword = substitute(l:searchword, ' ', '.*', 'g')
+  let l:searchword = shellescape(l:searchword)
   let l:escaped_lsfile_path = shellescape(a:lsfile_path)
   let l:escaped_lsfile_tmp = shellescape(a:lsfile_tmp)
-  silent execute l:grep_cmd.' '.l:searchword.'  '.l:escaped_lsfile_path.' > '.l:escaped_lsfile_tmp
-
-  if !filereadable(fnamemodify(a:lsfile_tmp, ':p'))
-    let l:conf = confirm("An error occurred")
-    return 1
-  endif
-  return 0
+  let l:execute = l:grep_cmd.' '.l:searchword.' '.l:escaped_lsfile_path.' > '.l:escaped_lsfile_tmp
+  " let l:conf = confirm(l:execute)
+  silent execute '!\touch '.l:escaped_lsfile_tmp
+  silent execute l:execute
+  let s:searchword = l:searchword
 endfunction
 
 function! s:cgetfile(lsfile_tmp)
@@ -165,10 +176,19 @@ function! s:cgetfile(lsfile_tmp)
   "行数が多いとquickfixに読み込むのに時間がかかるため行数チェック
   execute 'tabe ' . a:lsfile_tmp
   let l:line = line('$')
+  let l:fsize = getfsize(expand('%'))
   execute 'bd! ' . bufnr('%')
+
+  "Not Found
+  if 0 == l:fsize
+    " let l:conf = confirm('not found ['.s:searchword.']')
+    echo 'not found ['.s:searchword.']'
+    return
+  endif
+
   "閾値より大きい場合はメッセージ表示で終わり
   if l:line > g:qsf_maxline
-    let l:conf = confirm("Search result exceeded ".g:qsf_maxline."!")
+    let l:conf = confirm('search result('.l:line.' lines) exceeded '.g:qsf_maxline.' lines!')
     return
   endif
 
