@@ -26,20 +26,26 @@ if !exists('g:qsf_focus_quickfix')
   let g:qsf_focus_quickfix = 1
 endif
 
+"mkfile ***.sh ***.bat
+if !exists('g:qsf_mkfile')
+  let g:qsf_mkfile = 'make_lsfile.sh'
+endif
+
 let s:dir = ''
 let s:bufnr = ''
 let s:searchword = ''
 
 command! -nargs=* FS call quickfilesearch2#QFSFileSearch(<f-args>)
 command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
+command! QFSMakeListFile call quickfilesearch2#QFSMakeListFile()
 
 
-function! s:search_lsfile(dir)
+function! s:get_filedir(dir, fname)
 
-  let l:lsfile_path = fnamemodify(a:dir.'/'.g:qsf_lsfile, ':p')
+  let l:lsfile_path = fnamemodify(a:dir.'/'.a:fname, ':p')
 
   if filereadable(l:lsfile_path)
-    return l:lsfile_path
+    return a:dir.'/'
   endif
 
   let l:dir = fnamemodify(a:dir.'/../', ':p:h')
@@ -56,11 +62,13 @@ function! s:search_lsfile(dir)
 
   let s:dir = l:dir
 
-  return s:search_lsfile(l:dir)
+  return s:get_filedir(l:dir, a:fname)
 
 endfunction
 
 function! s:getbufnr()
+
+  let l:bufdir = ''
 
   let l:bufnr = bufnr('%')
   if getbufvar(l:bufnr, '&buftype') ==# ''
@@ -98,9 +106,8 @@ function! quickfilesearch2#QFSFileSearchInput()
   call quickfilesearch2#QFSFileSearch(l:filename)
 endfunction
 
-function! quickfilesearch2#QFSFileSearch(...)
 
-  let l:bufdir = ''
+function! quickfilesearch2#QFSFileSearch(...)
 
   if 1 > a:0
     return
@@ -113,18 +120,22 @@ function! quickfilesearch2#QFSFileSearch(...)
   endif
 
   let s:dir = ''
-  let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':p:h'))
-  if '' == l:lsfile_path
+  let l:filedir = s:get_filedir(fnamemodify(bufname(l:bufnr), ':p:h'), g:qsf_lsfile)
+  if '' == l:filedir
     let s:dir = ''
-    let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':p:h'))
-    if '' == l:lsfile_path
-      let l:conf = confirm('not found:['.g:qsf_lsfile.']')
-      return
+    let l:filedir = s:get_filedir(fnamemodify(bufname(s:bufnr), ':p:h'), g:qsf_lsfile)
+    if '' == l:filedir
+      let l:conf = confirm('note: not found ['.g:qsf_lsfile.']')
+      let l:filedir = quickfilesearch2#QFSMakeListFile()
+      if '' == l:filedir
+        return
+      endif
     endif
   endif
 
   let s:bufnr = l:bufnr
-  let l:lsfile_tmp = l:lsfile_path.'.tmp'
+  let l:lsfile_path = fnamemodify(l:filedir.g:qsf_lsfile, ':p')
+  let l:lsfile_tmp = fnamemodify(l:lsfile_path.'.tmp', ':p')
   " echo l:lsfile_tmp
 
   "引数を空白で連結
@@ -138,8 +149,8 @@ function! quickfilesearch2#QFSFileSearch(...)
   "tmp作成
   call s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
 
-  if !filereadable(fnamemodify(l:lsfile_tmp, ':p'))
-    let l:conf = confirm('cannot open ['.l:lsfile_tmp.']')
+  if !filereadable(l:lsfile_tmp)
+    let l:conf = confirm('error: cannot open ['.l:lsfile_tmp.']')
     return
   endif
 
@@ -158,7 +169,11 @@ endfunction
 
 function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
 
-  let l:grep_cmd = '!\grep -G -i -s -e'
+  if has('win32')
+    let l:grep_cmd = '!findstr'
+  else
+    let l:grep_cmd = '!\grep -G -i -s -e'
+  endif
   let l:searchword = substitute(a:searchword, '\([^\.]\)\*', '\1.\*', 'g')
   let l:searchword = substitute(l:searchword, ' ', '.*', 'g')
   let l:searchword = shellescape(l:searchword)
@@ -182,13 +197,13 @@ function! s:cgetfile(lsfile_tmp)
   "Not Found
   if 0 == l:fsize
     " let l:conf = confirm('not found ['.s:searchword.']')
-    echo 'not found ['.s:searchword.']'
+    echo 'note: not found ['.s:searchword.']'
     return
   endif
 
   "閾値より大きい場合はメッセージ表示で終わり
   if l:line > g:qsf_maxline
-    let l:conf = confirm('search result('.l:line.' lines) exceeded '.g:qsf_maxline.' lines!')
+    let l:conf = confirm('caution: search result('.l:line.' lines) exceeded '.g:qsf_maxline.' lines!')
     return
   endif
 
@@ -202,6 +217,54 @@ function! s:cgetfile(lsfile_tmp)
 
 endfunction
 
+function! quickfilesearch2#QFSMakeListFile()
+
+  " get listfile path
+  let l:bufnr = s:getbufnr()
+  if '' == l:bufnr
+    return ''
+  endif
+
+  let s:dir = ''
+  let l:filedir = s:get_filedir(fnamemodify(bufname(l:bufnr), ':p:h'), g:qsf_mkfile)
+  if '' == l:filedir
+    let s:dir = ''
+    let l:filedir = s:get_filedir(fnamemodify(bufname(s:bufnr), ':p:h'), g:qsf_mkfile)
+    if '' == l:filedir
+      let l:conf = confirm('note: not found ['.g:qsf_mkfile.']')
+      return ''
+    endif
+  endif
+
+  let l:lsfile_path = fnamemodify(l:filedir.g:qsf_lsfile, ':p')
+  let l:mkfile_path = fnamemodify(l:filedir.g:qsf_mkfile, ':p')
+
+  if has('win32')
+    let l:drive = l:filedir[:stridx(l:filedir, ':')]
+    let l:execute = '!'.l:drive.' & cd '.shellescape(l:filedir).' & start '.shellescape(l:mkfile_path)
+  else
+    let l:execute = '!cd '.shellescape(l:filedir).'; /bin/bash '.shellescape(l:mkfile_path)
+  endif
+
+  let l:conf = confirm('execute? ['.l:execute.']', "Yyes\nNno")
+  if 1 != l:conf
+    return ''
+  endif
+
+  call delete(l:lsfile_path)
+  silent execute l:execute
+
+  if !filereadable(l:lsfile_path)
+    let l:conf = confirm('error: could not create ['.l:lsfile_path.']')
+    return ''
+  endif
+
+  let l:conf = confirm('info: created ['.l:lsfile_path.']')
+  return l:filedir
+
+endfunction
+
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
+
