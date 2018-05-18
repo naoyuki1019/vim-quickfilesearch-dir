@@ -4,7 +4,7 @@ quickfilesearch2 look for a file named .lsfile(g:qsf_lsfile) & make_lsfile.sh(g:
 
 ```
 /dir/subdir/.lsfile
-/dev/.lsfile
+/dir/.lsfile
 /.lsfile
 ```
 
@@ -55,6 +55,6 @@ let g:qsf_mkfile = 'make_lsfile.sh' "default linux
 ```bat
 rem dir & findstr
 rem dir /s /b /a-d * | findstr /i /v "\\\.git\\" > .lsfile
-dir /s /b /a-d *.php *.tpl *.css *.js *.css  > .lsfile
+dir /s /b /a-d *.php *.tpl *.js *.css  > .lsfile
 ```
 

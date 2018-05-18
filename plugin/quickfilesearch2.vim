@@ -28,7 +28,7 @@ endif
 
 "mkfile ***.sh ***.bat
 if !exists('g:qsf_mkfile')
-  if has('win32')
+  if has("win32") || has("win95") || has("win64") || has("win16")
     let g:qsf_mkfile = 'make_lsfile.bat'
   else
     let g:qsf_mkfile = 'make_lsfile.sh'
@@ -49,7 +49,7 @@ function! s:get_filedir(dir, fname)
   let l:lsfile_path = fnamemodify(a:dir.'/'.a:fname, ':p')
 
   if filereadable(l:lsfile_path)
-    if has('win32')
+    if has("win32") || has("win95") || has("win64") || has("win16")
       return a:dir.'\'
     else
       return a:dir.'/'
@@ -177,7 +177,7 @@ endfunction
 
 function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
 
-  if has('win32')
+  if has("win32") || has("win95") || has("win64") || has("win16")
     let l:grep_cmd = '!findstr'
   else
     let l:grep_cmd = '!\grep -G -i -s -e'
@@ -246,7 +246,7 @@ function! quickfilesearch2#QFSMakeList()
   let l:lsfile_path = fnamemodify(l:filedir.g:qsf_lsfile, ':p')
   let l:mkfile_path = fnamemodify(l:filedir.g:qsf_mkfile, ':p')
 
-  if has('win32')
+  if has("win32") || has("win95") || has("win64") || has("win16")
     let l:drive = l:filedir[:stridx(l:filedir, ':')]
     let l:execute = '!'.l:drive.' & cd '.shellescape(l:filedir).' & '.shellescape(l:mkfile_path)
   else
