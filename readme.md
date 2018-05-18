@@ -35,10 +35,13 @@ This plugin displays the search results of file from .lsfile into Quickfix
 let g:qsf_lsfile = '.lsfile' "default
 let g:qsf_maxline = 200 "default
 let g:qsf_focus_quickfix = 1 "move the cursor to quickfix after search
-let g:qsf_mkfile = 'make_lsfile.sh' "default
-"let g:qsf_mkfile = 'make_lsfile.bat'
+if has('win32')
+	let g:qsf_mkfile = 'make_lsfile.bat'
+else
+	let g:qsf_mkfile = 'make_lsfile.sh' "default
+endif
 
-noremap <C-F12> :<C-u>QFSFileSearch<CR>
+"noremap <C-F12> :<C-u>QFSFileSearch<CR>
 ```
 
 ### make .lsfile
