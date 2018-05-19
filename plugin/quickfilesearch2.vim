@@ -74,7 +74,7 @@ function! s:get_filedir(dir, fname)
 
 endfunction
 
-function! s:getbufnr()
+function! s:get_bufnr()
 
   let l:bufdir = ''
 
@@ -122,7 +122,7 @@ function! quickfilesearch2#QFSFileSearch(...)
   endif
 
   " get listfile path
-  let l:bufnr = s:getbufnr()
+  let l:bufnr = s:get_bufnr()
   if '' == l:bufnr
     return
   endif
@@ -227,7 +227,7 @@ endfunction
 function! quickfilesearch2#QFSMakeList()
 
   " get listfile path
-  let l:bufnr = s:getbufnr()
+  let l:bufnr = s:get_bufnr()
   if '' == l:bufnr
     return ''
   endif
