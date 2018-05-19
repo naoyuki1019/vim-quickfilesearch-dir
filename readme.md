@@ -1,6 +1,6 @@
 # vim-quickfilesearch2
 
-quickfilesearch2 look for a file named .lsfile(g:qsf_lsfile) & make_lsfile.sh(g:qsf_mkfile) in the directory of the opened file and in every parent directory.
+quickfilesearch2 look for a file named .lsfile(g:qsf_lsfile) & .lsfile.sh(g:qsf_mkfile) in the directory of the opened file and in every parent directory.
 
 ```
 /dir/subdir/.lsfile
@@ -35,8 +35,8 @@ This plugin displays the search results of file from .lsfile into Quickfix
 let g:qsf_lsfile = '.lsfile' "default
 let g:qsf_maxline = 200 "default
 let g:qsf_focus_quickfix = 1 "move the cursor to quickfix after search
-let g:qsf_mkfile = 'make_lsfile.bat' "default windows
-let g:qsf_mkfile = 'make_lsfile.sh' "default linux
+let g:qsf_mkfile = '.lsfile.bat' "default windows
+let g:qsf_mkfile = '.lsfile.sh' "default linux
 
 "noremap <C-F12> :<C-u>QFSFileSearch<CR>
 ```

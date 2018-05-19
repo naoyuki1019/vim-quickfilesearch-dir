@@ -29,9 +29,9 @@ endif
 "mkfile ***.sh ***.bat
 if !exists('g:qsf_mkfile')
   if has("win32") || has("win95") || has("win64") || has("win16")
-    let g:qsf_mkfile = 'make_lsfile.bat'
+    let g:qsf_mkfile = '.lsfile.bat'
   else
-    let g:qsf_mkfile = 'make_lsfile.sh'
+    let g:qsf_mkfile = '.lsfile.sh'
   endif
 endif
 
