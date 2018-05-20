@@ -190,7 +190,7 @@ function! quickfilesearch2#QFSFileSearch(...)
       if 0 == s:find_mkfile
         call confirm('note: not found ['.g:qsf_lsfile.'] & ['.g:qsf_mkfile.']')
       else
-        call confirm('note: search end')
+        call confirm('info: end')
       endif
       return
     endif
