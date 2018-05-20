@@ -51,23 +51,12 @@ command! -nargs=* FS call quickfilesearch2#QFSFileSearch(<f-args>)
 command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
 command! QFSMakeList call quickfilesearch2#QFSMakeList()
 
-
-function! s:rm_tail_ds(dir)
-  let l:dir = a:dir
-  let l:len = strlen(a:dir)
-  let l:tail = l:dir[l:len-1]
-  if '/' == l:tail || '\' == l:tail
-    let l:dir = l:dir[0:l:len-2]
-  endif
-  return l:dir
-endfunction
-
 function! s:search_lsfile(dir)
   let l:dir = a:dir
 
   if 1 == s:is_win
     if 3 == strlen(l:dir)
-      let l:dir = s:rm_tail_ds(l:dir)
+      let l:dir = l:dir[0:1]
     endif
   else
   endif
@@ -107,7 +96,7 @@ function! s:search_mkfile(dir)
 
   if 1 == s:is_win
     if 3 == strlen(l:dir)
-      let l:dir = s:rm_tail_ds(l:dir)
+      let l:dir = l:dir[0:1]
     endif
   else
   endif
@@ -213,7 +202,7 @@ function! quickfilesearch2#QFSFileSearch(...)
   call s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
 
   if !filereadable(l:lsfile_tmp)
-    let l:conf = confirm('error: cannot open ['.l:lsfile_tmp.']')
+    call confirm('error: cannot open ['.l:lsfile_tmp.']')
     return
   endif
 
@@ -244,7 +233,6 @@ function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
   let l:escaped_lsfile_path = shellescape(a:lsfile_path)
   let l:escaped_lsfile_tmp = shellescape(a:lsfile_tmp)
   let l:execute = l:grep_cmd.' '.l:searchword.' '.l:escaped_lsfile_path.' > '.l:escaped_lsfile_tmp
-  " let l:conf = confirm('debug: '.l:execute)
   silent execute '!\touch '.l:escaped_lsfile_tmp
   silent execute l:execute
   let s:searchword = l:searchword
@@ -260,13 +248,13 @@ function! s:cgetfile(lsfile_tmp)
 
   "Not Found
   if 0 == l:fsize
-    let l:conf = confirm('note: not found ['.s:searchword.']')
+    call confirm('note: not found ['.s:searchword.']')
     return
   endif
 
   "閾値より大きい場合はメッセージ表示で終わり
   if l:line > g:qsf_maxline
-    let l:conf = confirm('caution: search result('.l:line.' lines) exceeded '.g:qsf_maxline.' lines!')
+    call confirm('caution: search result('.l:line.' lines) exceeded '.g:qsf_maxline.' lines!')
     return
   endif
 
@@ -326,11 +314,11 @@ function! s:exec_make(dir)
   silent execute l:execute
 
   if !filereadable(l:lsfile_path)
-    let l:conf = confirm('error: could not create ['.l:lsfile_path.']')
+    call confirm('error: could not create ['.l:lsfile_path.']')
     return 1
   endif
 
-  let l:conf = confirm('info: created ['.l:lsfile_path.']')
+  call confirm('info: created ['.l:lsfile_path.']')
   return 0
 
 endfunction
