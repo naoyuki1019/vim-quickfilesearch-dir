@@ -244,10 +244,10 @@ endfunction
 function! s:cgetfile(lsfile_tmp)
 
   "行数が多いとquickfixに読み込むのに時間がかかるため行数チェック
-  execute 'tabe ' . a:lsfile_tmp
+  silent execute 'tabe ' . a:lsfile_tmp
   let l:line = line('$')
   let l:fsize = getfsize(expand('%'))
-  execute 'bd! ' . bufnr('%')
+  silent execute 'bd! ' . bufnr('%')
 
   "Not Found
   if 0 == l:fsize
@@ -264,7 +264,7 @@ function! s:cgetfile(lsfile_tmp)
   "閾値より少ない場合はエラーファイルへ
   let l:bak_errorformat = &errorformat
   let &errorformat='%f'
-  execute 'cgetfile ' . a:lsfile_tmp
+  silent execute 'cgetfile ' . a:lsfile_tmp
   let &errorformat=l:bak_errorformat
 
   copen
