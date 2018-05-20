@@ -13,6 +13,7 @@ let g:loaded_quickfilesearch2 = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
+
 if has("win32") || has("win95") || has("win64") || has("win16")
   let s:is_win = 1
   let s:ds = '\'
@@ -204,7 +205,7 @@ function! quickfilesearch2#QFSFileSearch(...)
   call s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
 
   if !filereadable(l:lsfile_tmp)
-    call confirm('error: cannot open ['.l:lsfile_tmp.']')
+    call confirm('error: could not open ['.l:lsfile_tmp.']')
     return
   endif
 
