@@ -35,7 +35,11 @@ if !exists('g:qsf_mkfile')
   endif
 endif
 
-let s:dir = ''
+if has("win32") || has("win95") || has("win64") || has("win16")
+  let s:ds = '\'
+else
+  let s:ds = '/'
+endif
 let s:bufnr = ''
 let s:searchword = ''
 
@@ -46,20 +50,16 @@ command! QFSMakeList call quickfilesearch2#QFSMakeList()
 
 function! s:get_filedir(dir, fname)
 
-  let l:lsfile_path = fnamemodify(a:dir.'/'.a:fname, ':p')
+  let l:lsfile_path = fnamemodify(a:dir.s:ds.a:fname, ':p')
 
   if filereadable(l:lsfile_path)
-    if has("win32") || has("win95") || has("win64") || has("win16")
-      return a:dir.'\'
-    else
-      return a:dir.'/'
-    endif
+    return a:dir.s:ds
   endif
 
-  let l:dir = fnamemodify(a:dir.'/../', ':p:h')
+  let l:dir = fnamemodify(a:dir.s:ds.'..'.s:ds, ':p:h')
 
-  if s:dir == l:dir
-    " echo 'windows root ' . s:dir
+  if 3 == strlen(l:dir)
+    " echo 'windows root '
     return ''
   endif
 
@@ -67,8 +67,6 @@ function! s:get_filedir(dir, fname)
     " echo 'root directory / '
     return ''
   endif
-
-  let s:dir = l:dir
 
   return s:get_filedir(l:dir, a:fname)
 
@@ -127,10 +125,8 @@ function! quickfilesearch2#QFSFileSearch(...)
     return
   endif
 
-  let s:dir = ''
   let l:filedir = s:get_filedir(fnamemodify(bufname(l:bufnr), ':p:h'), g:qsf_lsfile)
   if '' == l:filedir
-    let s:dir = ''
     let l:filedir = s:get_filedir(fnamemodify(bufname(s:bufnr), ':p:h'), g:qsf_lsfile)
     if '' == l:filedir
       let l:conf = confirm('note: not found ['.g:qsf_lsfile.']')
@@ -232,10 +228,8 @@ function! quickfilesearch2#QFSMakeList()
     return ''
   endif
 
-  let s:dir = ''
   let l:filedir = s:get_filedir(fnamemodify(bufname(l:bufnr), ':p:h'), g:qsf_mkfile)
   if '' == l:filedir
-    let s:dir = ''
     let l:filedir = s:get_filedir(fnamemodify(bufname(s:bufnr), ':p:h'), g:qsf_mkfile)
     if '' == l:filedir
       let l:conf = confirm('note: not found ['.g:qsf_mkfile.']')
