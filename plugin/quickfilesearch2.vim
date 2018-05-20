@@ -182,8 +182,10 @@ function! quickfilesearch2#QFSFileSearch(...)
   let s:find_mkfile = 0
   let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':p:h'))
   if '' == l:lsfile_path
-    let s:find_mkfile = 0
-    let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':p:h'))
+    if l:bufnr != s:bufnr
+      let s:find_mkfile = 0
+      let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':p:h'))
+    endif
     if '' == l:lsfile_path
       if 0 == s:find_mkfile
         call confirm('note: not found ['.g:qsf_lsfile.'] & ['.g:qsf_mkfile.']')
@@ -222,12 +224,12 @@ endfunction
 function! s:make_tmp(lsfile_path, lsfile_tmp, searchword)
 
   if 1 == s:is_win
-    let l:grep_cmd = '!findstr'
+    let l:grep_cmd = '!findstr /I'
   else
     let l:grep_cmd = '!\grep -G -i -s -e'
   endif
   let l:searchword = substitute(a:searchword, '\v([^\.])\*', '\1.\*', 'g')
-  let l:searchword = substitute(l:searchword, '\v([^\\])\.([^\*])', '\\.', 'g')
+  let l:searchword = substitute(l:searchword, '\v([^\\])\.([^\*])', '\1\\.\2', 'g')
   let l:searchword = substitute(l:searchword, '\v\s{1,}', '.*', 'g')
   let l:searchword = shellescape(l:searchword)
   let l:escaped_lsfile_path = shellescape(a:lsfile_path)
@@ -279,8 +281,10 @@ function! quickfilesearch2#QFSMakeList()
   let s:find_mkfile = 0
   let l:mkfile_path = s:search_mkfile(fnamemodify(bufname(l:bufnr), ':p:h'))
   if '' == l:mkfile_path
-    let s:find_mkfile = 0
-    let l:mkfile_path = s:search_mkfile(fnamemodify(bufname(s:bufnr), ':p:h'))
+    if l:bufnr != s:bufnr
+      let s:find_mkfile = 0
+      let l:mkfile_path = s:search_mkfile(fnamemodify(bufname(s:bufnr), ':p:h'))
+    endif
     if '' == l:mkfile_path
       if 0 == s:find_mkfile
         call confirm('note: not found ['.g:qsf_mkfile.']')
