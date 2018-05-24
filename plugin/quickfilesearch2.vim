@@ -30,6 +30,8 @@ if !exists('g:qsf_maxline')
   let g:qsf_maxline = 200
 endif
 
+let s:debug = 1
+
 "Move the cursor to quickfix window after search
 if !exists('g:qsf_focus_quickfix')
   let g:qsf_focus_quickfix = 1
@@ -54,6 +56,10 @@ command! QFSMakeList call quickfilesearch2#QFSMakeList()
 
 function! s:search_lsfile(dir)
   let l:dir = a:dir
+
+  if 1 == s:is_remote(l:dir)
+    return ''
+  endif
 
   if 1 == s:is_win
     if 3 == strlen(l:dir)
@@ -87,6 +93,17 @@ function! s:search_lsfile(dir)
   endif
 
   let l:dir = fnamemodify(l:dir.s:ds.'..'.s:ds, ':p:h')
+
+  " 念のため
+  if 1 == s:is_win
+    let l:match = matchstr(l:dir, '\V..\\..\\')
+  else
+    let l:match = matchstr(l:dir, '\V../../')
+  endif
+  if '' != l:match
+    return ''
+  endif
+
   return s:search_lsfile(l:dir)
 
 endfunction
@@ -94,6 +111,10 @@ endfunction
 
 function! s:search_mkfile(dir)
   let l:dir = a:dir
+
+  if 1 == s:is_remote(l:dir)
+    return ''
+  endif
 
   if 1 == s:is_win
     if 3 == strlen(l:dir)
@@ -122,6 +143,17 @@ function! s:search_mkfile(dir)
   endif
 
   let l:dir = fnamemodify(l:dir.s:ds.'..'.s:ds, ':p:h')
+
+  " 念のため
+  if 1 == s:is_win
+    let l:match = matchstr(l:dir, '\V..\\..\\')
+  else
+    let l:match = matchstr(l:dir, '\V../../')
+  endif
+  if '' != l:match
+    return ''
+  endif
+
   return s:search_mkfile(l:dir)
 
 endfunction
@@ -326,6 +358,21 @@ function! s:exec_make(dir)
   call confirm('info: created ['.l:lsfile_path.']')
   return 0
 
+endfunction
+
+function! s:is_remote(path)
+  let l:pt = '\v(ftp:\/\/.*|rcp:\/\/.*|ssh:\/\/.*|scp:\/\/.*|http:\/\/.*|file:\/\/.*|https:\/\/.*|dav:\/\/.*|davs:\/\/.*|rsync:\/\/.*|sftp:\/\/.*)'
+  let l:match = matchstr(a:path, l:pt)
+  if '' != l:match
+    if 1 == s:debug
+      let outputfile = "~/quickfilesearch2_is_remote.log"
+      execute ":redir! >> " . outputfile
+          silent! echon l:match . "\n"
+      redir END
+    endif
+    return 1
+  endif
+  return 0
 endfunction
 
 
