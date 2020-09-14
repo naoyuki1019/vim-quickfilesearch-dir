@@ -45,14 +45,33 @@ if !exists('g:qsf_mkfile')
     let g:qsf_mkfile = '.lsfile.sh'
   endif
 endif
+let g:qsf_automake = get(g:, 'qsf_automake', 1)
+let g:qsf_automake_onetime = get(g:, 'qsf_automake_onetime', 1)
+let g:qsf_ask_one = get(g:, 'qsf_ask_one', 1)
 
 let s:bufnr = ''
 let s:searchword = ''
 let s:find_mkfile = 0
-
+let s:lsfile_path = ''
+let s:qsf_ask_one_flg = 0
+let s:exec_confirm = 0
 command! -nargs=* FS call quickfilesearch2#QFSFileSearch(<f-args>)
 command! QFSFileSearch2 call quickfilesearch2#QFSFileSearchInput()
 command! QFSMakeList call quickfilesearch2#QFSMakeList()
+
+augroup quickfilesearch2#QFS
+    autocmd!
+    autocmd BufReadPost * call quickfilesearch2#QFSOnBufRead()
+augroup END
+
+function! quickfilesearch2#QFSOnBufRead()
+  if 1 == g:qsf_automake && (0 == g:qsf_automake_onetime || (1 == g:qsf_automake_onetime && '' == s:lsfile_path))
+    if 0 == g:qsf_ask_one || (1 == g:qsf_ask_one && 0 == s:qsf_ask_one_flg)
+      call s:search_lsfile(fnamemodify(bufname(bufnr('%')), ':p:h'))
+    endif
+  endif
+
+endfunction
 
 function! s:search_lsfile(dir)
   let l:dir = a:dir
@@ -79,6 +98,8 @@ function! s:search_lsfile(dir)
     let l:res = s:exec_make(l:dir.s:ds)
     if 0 == l:res
       return l:dir.s:ds.g:qsf_lsfile
+    elseif 2 == l:res
+      return ''
     endif
   endif
 
@@ -131,10 +152,7 @@ function! s:search_mkfile(dir)
   let l:mkfile_path = fnamemodify(l:dir.s:ds.g:qsf_mkfile, ':p')
   if filereadable(l:mkfile_path)
     let s:find_mkfile = 1
-    let l:res = s:exec_make(l:dir.s:ds)
-    if 0 == l:res
-      return l:dir.s:ds.g:qsf_mkfile
-    endif
+    return l:dir
   endif
 
   if 1 == s:is_win
@@ -223,13 +241,13 @@ function! quickfilesearch2#QFSFileSearch(...)
   endif
 
   let s:find_mkfile = 0
-  let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':p:h'))
-  if '' == l:lsfile_path
+  let s:lsfile_path = s:search_lsfile(fnamemodify(bufname(l:bufnr), ':p:h'))
+  if '' == s:lsfile_path
     if l:bufnr != s:bufnr
       let s:find_mkfile = 0
-      let l:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':p:h'))
+      let s:lsfile_path = s:search_lsfile(fnamemodify(bufname(s:bufnr), ':p:h'))
     endif
-    if '' == l:lsfile_path
+    if '' == s:lsfile_path
       if 0 == s:find_mkfile
         call confirm('note: not found ['.g:qsf_lsfile.'] & ['.g:qsf_mkfile.']')
       else
@@ -240,11 +258,11 @@ function! quickfilesearch2#QFSFileSearch(...)
   endif
 
   let s:bufnr = l:bufnr
-  let l:lsfile_tmp = fnamemodify(l:lsfile_path.'.tmp', ':p')
+  let l:lsfile_tmp = fnamemodify(s:lsfile_path.'.tmp', ':p')
   " echo l:lsfile_tmp
 
   "tmp作成
-  call s:make_tmp(l:lsfile_path, l:lsfile_tmp, l:searchword)
+  call s:make_tmp(s:lsfile_path, l:lsfile_tmp, l:searchword)
 
   if !filereadable(l:lsfile_tmp)
     call confirm('error: could not open ['.l:lsfile_tmp.']')
@@ -322,20 +340,38 @@ function! quickfilesearch2#QFSMakeList()
   endif
 
   let s:find_mkfile = 0
-  let l:mkfile_path = s:search_mkfile(fnamemodify(bufname(l:bufnr), ':p:h'))
-  if '' == l:mkfile_path
-    if l:bufnr != s:bufnr
+  let l:mkfile_dir = s:search_mkfile(fnamemodify(bufname(l:bufnr), ':p:h'))
+  if '' != l:mkfile_dir
+    let l:res = s:exec_make(l:mkfile_dir.s:ds)
+    if 1 == l:res
       let s:find_mkfile = 0
-      let l:mkfile_path = s:search_mkfile(fnamemodify(bufname(s:bufnr), ':p:h'))
-    endif
-    if '' == l:mkfile_path
-      if 0 == s:find_mkfile
-        call confirm('note: not found ['.g:qsf_mkfile.']')
-      else
-        call confirm('note: search end')
-      endif
+      let l:mkfile_dir = ''
+    elseif 2 == l:res
       return
     endif
+  else
+    if l:bufnr != s:bufnr
+      let s:find_mkfile = 0
+      let l:mkfile_dir = s:search_mkfile(fnamemodify(bufname(s:bufnr), ':p:h'))
+      if '' != l:mkfile_dir
+        let l:res = s:exec_make(l:mkfile_dir.s:ds)
+        if 1 == l:res
+          let s:find_mkfile = 0
+          let l:mkfile_dir = ''
+        elseif 2 == l:res
+          return
+        endif
+      endif
+    endif
+  endif
+
+  if '' == l:mkfile_dir
+    if 0 == s:find_mkfile
+      call confirm('note: not found ['.g:qsf_mkfile.']')
+    else
+      call confirm('note: search end')
+    endif
+    return
   endif
 
 endfunction
@@ -353,6 +389,7 @@ function! s:exec_make(dir)
   endif
 
   let l:conf = confirm('Execute? ['.l:execute.']', "Yyes\nNno")
+  let s:qsf_ask_one_flg = 1
   if 1 != l:conf
     return 2
   endif
